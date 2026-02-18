@@ -9,7 +9,8 @@ import { Footer } from '@/components/footer'
 import { NeuralCanvasBg } from '@/components/neural-canvas-bg'
 
 
-const accentColor = '#3b82f6' // blue
+const accentColor = '#00bfff'
+
 
 const isLocked = true
 
