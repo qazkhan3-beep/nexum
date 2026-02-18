@@ -279,7 +279,7 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Subtle grain texture - 3% opacity
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+/*       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const data = imageData.data
       for (let i = 0; i < data.length; i += 4) {
         const grain = (Math.random() - 0.5) * 1.5 // ~3% opacity
@@ -287,7 +287,7 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
         data[i + 1] += grain
         data[i + 2] += grain
       }
-      ctx.putImageData(imageData, 0, 0)
+      ctx.putImageData(imageData, 0, 0) */
 
       requestAnimationFrame(animate)
     }
