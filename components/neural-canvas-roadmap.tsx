@@ -166,6 +166,7 @@ export function NeuralCanvasRoadmap() {
     let time = 0
 
     const animate = () => {
+
       const rect = canvas.getBoundingClientRect()
       ctx.clearRect(0, 0, rect.width, rect.height)
 
@@ -247,7 +248,10 @@ export function NeuralCanvasRoadmap() {
       drawScanlines()
       drawGrainTexture()
 
-      animationId = requestAnimationFrame(animate)
+      if (!isMobile()) {
+        animationId = requestAnimationFrame(animate)
+      }
+
     }
 
     setupCanvas()
@@ -259,13 +263,17 @@ export function NeuralCanvasRoadmap() {
       setupCanvas()
       initParticles()
       initBlobs()
+      animate() // ✅ redraw once on mobile, loop on desktop
     }
 
+
     window.addEventListener("resize", handleResize)
+
 
     return () => {
       window.removeEventListener("resize", handleResize)
       if (animationId) cancelAnimationFrame(animationId)
+
     }
   }, [])
 
