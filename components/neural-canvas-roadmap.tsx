@@ -39,21 +39,31 @@ export function NeuralCanvasRoadmap() {
     let animationId: number
     let particles: Particle[] = []
     let blobs: Blob[] = []
+    const isMobile = () => window.innerWidth < 640
+
 
     const setupCanvas = () => {
-      const dpr = window.devicePixelRatio || 1
       const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      ctx.scale(dpr, dpr)
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile() ? 1.25 : 1.5)
+
+      canvas.width = Math.floor(rect.width * dpr)
+      canvas.height = Math.floor(rect.height * dpr)
+
       canvas.style.width = `${rect.width}px`
       canvas.style.height = `${rect.height}px`
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.scale(dpr, dpr)
     }
+
+
 
     const initParticles = () => {
       const rect = canvas.getBoundingClientRect()
       particles = []
-      for (let i = 0; i < 32; i++) {
+      const count = isMobile() ? 8 : 32
+      for (let i = 0; i < count; i++) {
+
         particles.push({
           x: Math.random() * rect.width,
           y: Math.random() * rect.height,
@@ -133,13 +143,16 @@ export function NeuralCanvasRoadmap() {
 
     const drawScanlines = () => {
       const rect = canvas.getBoundingClientRect()
-      ctx.fillStyle = "rgba(255, 255, 255, 0.01)"
-      for (let i = 0; i < rect.height; i += 4) {
+      ctx.fillStyle = isMobile() ? "rgba(255, 255, 255, 0.006)" : "rgba(255, 255, 255, 0.01)"
+      const step = isMobile() ? 6 : 4
+      for (let i = 0; i < rect.height; i += step) {
         ctx.fillRect(0, i, rect.width, 1)
       }
     }
 
+
     const drawGrainTexture = () => {
+      if (isMobile()) return // ✅ easiest: remove grain on mobile
       const rect = canvas.getBoundingClientRect()
       ctx.fillStyle = "rgba(255, 255, 255, 0.03)"
       for (let i = 0; i < 100; i++) {
@@ -148,6 +161,7 @@ export function NeuralCanvasRoadmap() {
         ctx.fillRect(x, y, 1, 1)
       }
     }
+
 
     let time = 0
 
@@ -161,7 +175,8 @@ export function NeuralCanvasRoadmap() {
       blobs.forEach((blob) => {
         blob.pulsePhase += blob.pulseSpeed
         blob.scale = 1 + Math.sin(blob.pulsePhase) * 0.075 // 1.0 → 1.075 → 1.0
-        const size = 600 * blob.scale
+        const size = (isMobile() ? 420 : 600) * blob.scale
+
         drawGlowSpot(blob.x, blob.y, size, blob.color, 0.055)
       })
 
@@ -199,22 +214,34 @@ export function NeuralCanvasRoadmap() {
 
       // Draw connection lines
       ctx.strokeStyle = "rgba(100, 150, 200, 0.05)"
-      ctx.lineWidth = 0.4
+      ctx.lineWidth = isMobile() ? 0.25 : 0.4
+
       for (let i = 0; i < particles.length; i++) {
+        let connections = 0
+        const maxConnections = isMobile() ? 2 : 6
+        const maxDist = isMobile() ? 55 : 120
+
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x
           const dy = particles[i].y - particles[j].y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 120) {
-            const opacity = (1 - dist / 120) * 0.08
+          const distSq = dx * dx + dy * dy
+
+          if (distSq < maxDist * maxDist) {
+            const dist = Math.sqrt(distSq)
+            const opacity = (1 - dist / maxDist) * (isMobile() ? 0.03 : 0.08)
+
             ctx.strokeStyle = `rgba(100, 150, 200, ${opacity})`
             ctx.beginPath()
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
             ctx.stroke()
+
+            connections++
+            if (connections >= maxConnections) break
           }
         }
       }
+
 
       drawVignette()
       drawScanlines()
@@ -243,10 +270,12 @@ export function NeuralCanvasRoadmap() {
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      style={{ zIndex: 0 }}
-    />
+    <div className="pointer-events-none absolute inset-0" style={{ zIndex: 0 }}>
+      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+
+      {/* Mobile darken overlay for readability */}
+      <div className="absolute inset-0 sm:hidden bg-black/35" />
+    </div>
   )
+
 }

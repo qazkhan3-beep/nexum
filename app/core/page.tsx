@@ -18,7 +18,7 @@ export default function CorePage() {
         accentColor="#00BFFF"
         icon={<Network className="h-6 w-6" />}
         status={{
-          badge: "Private Beta",
+          badge: "Founders Layer",
           
         }}
         ctaButton={{

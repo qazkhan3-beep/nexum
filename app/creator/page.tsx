@@ -18,7 +18,7 @@ export default function CreatorPage() {
         accentColor="#a855f7"
         icon={<Sparkles className="h-6 w-6" />}
         status={{
-          badge: "Private Beta",
+          badge: "Founders Layer",
           
         }}
         ctaButton={{

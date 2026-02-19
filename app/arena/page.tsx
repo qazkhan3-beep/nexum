@@ -18,7 +18,7 @@ export default function ArenaPage() {
         accentColor="#f59e0b"
         icon={<Trophy className="h-6 w-6" />}
         status={{
-          badge: "Private Beta",
+          badge: "Founders Layer",
           
         }}
         ctaButton={{

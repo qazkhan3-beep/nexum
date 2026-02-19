@@ -79,7 +79,6 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
   const noiseRef = useRef<NoiseGenerator>(new NoiseGenerator())
   const timeRef = useRef(0)
   const mouseRef = useRef({ x: 0, y: 0 })
-  const scrollRef = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -88,11 +87,24 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    let rafId = 0
+
     // Set canvas size
     const setCanvasSize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
+  const dpr = Math.min(window.devicePixelRatio, 1.5)
+
+  canvas.width = Math.floor(window.innerWidth * dpr)
+  canvas.height = Math.floor(window.innerHeight * dpr)
+
+  canvas.style.width = `${window.innerWidth}px`
+  canvas.style.height = `${window.innerHeight}px`
+
+  // ✅ IMPORTANT: reset transform before scaling (prevents stacking)
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.scale(dpr, dpr)
+}
+
+
     setCanvasSize()
     window.addEventListener('resize', setCanvasSize)
 
@@ -102,14 +114,9 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
     }
     window.addEventListener('mousemove', handleMouseMove)
 
-    // Track scroll
-    const handleScroll = () => {
-      scrollRef.current = window.scrollY
-    }
-    window.addEventListener('scroll', handleScroll)
 
     // Initialize particles - 40% of original (80 → 32)
-    const particleCount = 32
+    const particleCount = 24
     const particles: Particle[] = []
 
     for (let i = 0; i < particleCount; i++) {
@@ -133,7 +140,8 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
 
     // Initialize glow spots - 4-6 large radial glows
     const spotCount = 5
-    const glowSpots = []
+    const glowSpots: any[] = []
+
     for (let i = 0; i < spotCount; i++) {
       glowSpots.push({
         x: Math.random() * canvas.width,
@@ -202,7 +210,6 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
 
         p.x += p.vx
         p.y += p.vy
-        p.z += (scrollRef.current * 0.05 - p.z) * 0.01
 
         // Wrap around
         if (p.x < -20) p.x = canvas.width + 20
@@ -217,10 +224,9 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
           const p2 = particles[j]
           const dx = p2.x - p1.x
           const dy = p2.y - p1.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-
-          if (dist < 140) {
-            const opacity = (1 - dist / 140) * 0.08 // Max 0.08
+          const distSq = dx * dx + dy * dy
+          if (distSq < 140 * 140) {
+            const opacity = (1 - Math.sqrt(distSq) / 140) * 0.08 // Max 0.08
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`
             ctx.lineWidth = 0.5
             ctx.beginPath()
@@ -257,48 +263,47 @@ export function NeuralCanvasBg({ accentColor }: NeuralCanvasBgProps) {
       // Scanline overlay - minimal
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.01)'
       ctx.lineWidth = 1
-      for (let y = 0; y < canvas.height; y += 3) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(canvas.width, y)
-        ctx.stroke()
-      }
+      for (let y = 0; y < window.innerHeight; y += 3) {
+  ctx.beginPath()
+  ctx.moveTo(0, y)
+  ctx.lineTo(window.innerWidth, y)
+  ctx.stroke()
+}
+
 
       // Strong center vignette - transparent center to dark edges
-      const vignetteGradient = ctx.createRadialGradient(
-        canvas.width / 2,
-        canvas.height / 2,
-        0,
-        canvas.width / 2,
-        canvas.height / 2,
-        Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height) / 1.5
-      )
+      const w = window.innerWidth
+const h = window.innerHeight
+
+const vignetteGradient = ctx.createRadialGradient(
+  w / 2,
+  h / 2,
+  0,
+  w / 2,
+  h / 2,
+  Math.sqrt(w * w + h * h) / 1.5
+)
+
       vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
       vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)')
       ctx.fillStyle = vignetteGradient
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, w, h)
 
-      // Subtle grain texture - 3% opacity
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const data = imageData.data
-      for (let i = 0; i < data.length; i += 4) {
-        const grain = (Math.random() - 0.5) * 1.5 // ~3% opacity
-        data[i] += grain
-        data[i + 1] += grain
-        data[i + 2] += grain
-      }
-      ctx.putImageData(imageData, 0, 0)
 
-      requestAnimationFrame(animate)
+      
+
+      rafId = requestAnimationFrame(animate)
+
     }
 
     animate()
 
     return () => {
+      cancelAnimationFrame(rafId)   // ✅ ADD THIS LINE
       window.removeEventListener('resize', setCanvasSize)
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('scroll', handleScroll)
     }
+
   }, [accentColor])
 
   return (
